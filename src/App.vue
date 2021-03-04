@@ -1,20 +1,23 @@
 <template>
   <div id="app">
     <div id="center-container">
-      <select id="camera-select" v-model="videoDevice" @change="initWebcamStream()">
+      <select id="camera-select" v-model="videoDevice" @change="initWebcamStream()" :disabled="! isModelReady">
         <option v-for="device in devices" v-bind:key="device.deviceId" v-bind:value="device.deviceId">
           {{ device.label }}
         </option>
       </select>
       <div id="result-frame">
         <video ref="video" autoplay></video>
-        <canvas ref="canvas"></canvas>
+        <canvas ref="canvas" :width="resultWidth" :height="resultHeight"></canvas>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import * as tf from '@tensorflow/tfjs'
+import * as cocoSsd from '@tensorflow-models/coco-ssd'
+
 export default {
   name: 'App',
   components: {
@@ -25,24 +28,86 @@ export default {
       videoDevice: '',
       resultWidth: 0,
       resultHeight: 0,
-      devices: []
+      devices: [],
+      baseModel: 'mobilenet_v2',
+      isModelReady: false
     }
   },
 
   mounted () {
+    tf.setBackend('webgl')
+
     this.listVideoDevices()
-    .then(videoDevices => {
-      for (let device of videoDevices) {
-        this.devices.push(device)
-      }
-      this.videoDevice = videoDevices[0].deviceId
-    })
-    .then(() => {
-      return this.initWebcamStream()
-    })
+      .then(videoDevices => {
+        for (let device of videoDevices) {
+          this.devices.push(device)
+        }
+        this.videoDevice = this.devices[0].deviceId
+      })
+      .then(() => {
+        return this.initWebcamStream()
+      })
+      .then(() => {
+        return this.loadModel()
+        .then(() => {
+          this.detectObjects()
+        })
+      })
   },
 
   methods: {
+
+    loadModel () {
+      return cocoSsd.load(this.baseModel)
+      .then(model => {
+        this.model = model
+        this.isModelReady = true
+        console.log('model loaded')
+      })
+      .catch((error) => {
+          console.log('failed to load the model', error)
+          throw (error)
+      })
+    },
+
+    detectObjects () {
+      if (!this.isModelReady) return
+
+      if (this.isVideoStreamReady) {
+        this.model.detect(this.$refs.video)
+          .then(predictions => {
+              this.renderPredictions(predictions)
+              requestAnimationFrame(() => {
+                this.detectObjects()
+              })
+          })
+      } else {
+        requestAnimationFrame(() => {
+          this.detectObjects()
+        })
+      }
+    },
+
+    renderPredictions (predictions) {
+      const ctx = this.$refs.canvas.getContext('2d')
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+      predictions.forEach(prediction => {
+        ctx.beginPath()
+        ctx.rect(...prediction.bbox)
+        ctx.lineWidth = 3
+        ctx.strokeStyle = 'red'
+        ctx.fillStyle = 'red'
+        ctx.stroke()
+        ctx.shadowColor = 'white'
+        ctx.shadowBlur = 10
+        ctx.font = '24px Arial bold'
+        ctx.fillText(
+          `${(prediction.score * 100).toFixed(1)}% ${prediction.class}`,
+          prediction.bbox[0],
+          prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
+        )
+      })
+    },
 
     listVideoDevices () {
       return navigator.mediaDevices.enumerateDevices()
