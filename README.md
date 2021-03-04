@@ -272,7 +272,6 @@ data () {
         resultHeight: 0,
         devices: [],
         baseModel: 'mobilenet_v2',
-        runPrediction: false,
         isModelReady: false
     }
 },
