@@ -90,6 +90,21 @@ Put this code into the section `<div id="app">...</div>`.
 
 The `video` element will be used to display the live video from the webcam, the `canvas` will be used to draw additional information on top of the video.
 
+## Add a data section
+
+The app needs to keep track of some information (current video device, video width and height, all available video devices), so let's add a `data` section:
+
+```js
+data () {
+  return {
+    videoDevice: '',
+    resultWidth: 0,
+    resultHeight: 0,
+    devices: []
+  }
+},
+```
+
 ## Add some functionality
 
 We have to add functions for camera initialization.
