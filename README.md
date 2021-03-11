@@ -292,7 +292,15 @@ data () {
 },
 ```
 
-The we need a few additional functions.
+Set the size of the canvas to the correct values (`resultWidth`, `resultHeight`).
+
+```
+...
+<canvas ref="canvas" :width="resultWidth" :height="resultHeight"></canvas>
+...
+```
+
+Then we need a few additional functions.
 
 ```js
 loadModel () {
@@ -346,6 +354,19 @@ renderPredictions (predictions) {
         )
     })
 },
+```
+
+Finally, update the `mounted` lifecycle hook to load the machine learning model and start the inference loop.
+
+Add the following code to the promise in the hook function:
+
+```js
+.then(() => {
+  return this.loadModel()
+  .then(() => {
+    this.detectObjects()
+  })
+})
 ```
 
 Now you should see detected objects drawn as overlays over the video image.
