@@ -294,7 +294,7 @@ data () {
 
 Set the size of the canvas to the correct values (`resultWidth`, `resultHeight`).
 
-```
+```html
 ...
 <canvas ref="canvas" :width="resultWidth" :height="resultHeight"></canvas>
 ...
