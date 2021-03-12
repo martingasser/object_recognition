@@ -10,6 +10,11 @@
         <video ref="video" autoplay></video>
         <canvas ref="canvas" :width="resultWidth" :height="resultHeight"></canvas>
       </div>
+      <div id="result-table">
+        <div v-for="(prediction, index) in predictions" v-bind:key="index">
+          {{prediction.name}}, {{prediction.score}} %
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -29,7 +34,8 @@ export default {
       resultHeight: 0,
       devices: [],
       baseModel: 'mobilenet_v2',
-      isModelReady: false
+      isModelReady: false,
+      predictions: []
     }
   },
   mounted () {
@@ -132,6 +138,8 @@ export default {
     },
 
     renderPredictions (predictions) {
+        this.predictions.splice(0)
+
         const ctx = this.$refs.canvas.getContext('2d')
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         predictions.forEach(prediction => {
@@ -149,6 +157,11 @@ export default {
                 prediction.bbox[0],
                 prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
             )
+
+            this.predictions.push({
+              name: prediction.class,
+              score: (prediction.score * 100).toFixed(1)
+            })
         })
     }    
   }
@@ -163,16 +176,24 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
 }
+
+#result-frame {
+  height: 500px;
+}
+
 video {
   position: absolute;
 }
+
 canvas {
   position: absolute;
 }
+
 #center-container {
   width: 600px;
   margin: 0 auto;
 }
+
 #camera-select {
   width: 300px;
   margin-bottom: 50px;
