@@ -370,3 +370,64 @@ Add the following code to the promise in the hook function:
 ```
 
 Now you should see detected objects drawn as overlays over the video image.
+
+# Display the list of object predictions in HTML
+
+In this task, you should generate a list of object predictions in HTML. On the web page, there should be a list of detected objects and prediction scores (a prediction score basically expresses how sure the algorithm is about its prediction).
+
+## Add a `predictions' list to the data function
+
+`...` represents code that should already exist in your current implementation.
+
+```js
+data() {
+  return {
+     ...
+     ...
+     predictions: []
+  }
+}
+```
+
+## Push the predictions to the list in the `renderPredictions()` function
+
+```js
+renderPredictions(predictions) {
+  // first, remove all elements from the list
+  // use the splice() function
+  this.predictions.splice(0)
+  
+  ...
+  ...
+  
+  predictions.forEach(prediction => {
+    ...
+    ...
+    
+    // then push each prediction to the list
+    // for each prediction, create an object that contains the class and the score of the prediction
+    // the score should be in percentages with two positions after the comma
+    this.predictions.push({
+      name: prediction.class,
+      score: (prediction.score*100).toFixed(1)
+    })
+  })
+}
+```
+
+## Update the template section
+
+To generate HTML in the template section, add a new `ul` (unordered list) to the template.
+
+```html
+<ul>
+  <li v-for="(prediction, index) in predictions" v-bind:key="index">
+    {{prediction.name}}, {{prediction.score}} %
+  </li>
+</ul>
+```
+
+This code loops over the list of predictions and generates a `li` (list item) for each prediction.
+
+The code `{{prediction.name}}, {{prediction.score}} %` generates text like `person, 86.66 %`.
+
