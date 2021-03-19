@@ -126,7 +126,7 @@ export default {
         if (this.isVideoStreamReady) {
           this.model.predict(this.$refs.video)
           .then(predictions => {
-            this.renderPredictions(predictions)
+            this.handlePredictions(predictions)
             
             requestAnimationFrame(() => {
               this.detectObjects()
@@ -139,7 +139,7 @@ export default {
         }
     },
 
-    renderPredictions (predictions) {
+    handlePredictions (predictions) {
         this.predictions.splice(0)
         
         let maxPrediction
@@ -158,11 +158,14 @@ export default {
         })
 
         if (! this.synth.speaking && this.lastPrediction != maxPrediction.className) {
-          const utterThis = new SpeechSynthesisUtterance(maxPrediction.className);
-          this.synth.speak(utterThis)
+          this.speak(maxPrediction.className)
           this.lastPrediction = maxPrediction.className
         }
-        
+    },
+
+    speak (prediction) {
+      const utterThis = new SpeechSynthesisUtterance(prediction);
+      this.synth.speak(utterThis)
     }
   }
 }
