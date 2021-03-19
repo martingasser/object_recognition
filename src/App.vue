@@ -10,18 +10,18 @@
         <video ref="video" autoplay></video>
         <canvas ref="canvas" :width="resultWidth" :height="resultHeight"></canvas>
       </div>
-      <div id="result-table">
-        <div v-for="(prediction, index) in predictions" v-bind:key="index">
+      <ul>
+        <li v-for="(prediction, index) in predictions" v-bind:key="index">
           {{prediction.name}}, {{prediction.score}} %
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 
 <script>
 import * as tf from '@tensorflow/tfjs'
-import * as cocoSsd from '@tensorflow-models/coco-ssd'
+import * as tmImage from '@teachablemachine/image'
 
 export default {
   name: 'App',
@@ -35,7 +35,9 @@ export default {
       devices: [],
       baseModel: 'mobilenet_v2',
       isModelReady: false,
-      predictions: []
+      predictions: [],
+      synth: window.speechSynthesis,
+      lastPrediction: ''
     }
   },
   mounted () {
@@ -107,63 +109,61 @@ export default {
     },
 
     loadModel () {
-        return cocoSsd.load(this.baseModel)
-        .then(model => {
-            this.model = model
-            this.isModelReady = true
-            console.log('model loaded')
-        })
-        .catch((error) => {
-            console.log('failed to load the model', error)
-            throw (error)
-        })
+      return tmImage.load('/model.json', '/metadata.json')
+      .then(model => {
+        this.model = model
+        this.isModelReady = true
+      })
+      .catch(error => {
+        console.log('failed to load the mode', error)
+        throw(error)
+      })
     },
 
     detectObjects () {
         if (!this.isModelReady) return
 
         if (this.isVideoStreamReady) {
-        this.model.detect(this.$refs.video)
-            .then(predictions => {
-                this.renderPredictions(predictions)
-                requestAnimationFrame(() => {
-                this.detectObjects()
-                })
+          this.model.predict(this.$refs.video)
+          .then(predictions => {
+            this.renderPredictions(predictions)
+            
+            requestAnimationFrame(() => {
+              this.detectObjects()
             })
+          })
         } else {
-        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
             this.detectObjects()
-        })
+          })
         }
     },
 
     renderPredictions (predictions) {
         this.predictions.splice(0)
+        
+        let maxPrediction
+        let maxProb = 0
 
-        const ctx = this.$refs.canvas.getContext('2d')
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         predictions.forEach(prediction => {
-            ctx.beginPath()
-            ctx.rect(...prediction.bbox)
-            ctx.lineWidth = 3
-            ctx.strokeStyle = 'red'
-            ctx.fillStyle = 'red'
-            ctx.stroke()
-            ctx.shadowColor = 'white'
-            ctx.shadowBlur = 10
-            ctx.font = '24px Arial bold'
-            ctx.fillText(
-                `${(prediction.score * 100).toFixed(1)}% ${prediction.class}`,
-                prediction.bbox[0],
-                prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
-            )
-
             this.predictions.push({
-              name: prediction.class,
-              score: (prediction.score * 100).toFixed(1)
+              name: prediction.className,
+              score: (prediction.probability * 100).toFixed(1)
             })
+
+            if (prediction.probability > maxProb) {
+              maxProb = prediction.probability
+              maxPrediction = prediction
+            }
         })
-    }    
+
+        if (! this.synth.speaking && this.lastPrediction != maxPrediction.className) {
+          const utterThis = new SpeechSynthesisUtterance(maxPrediction.className);
+          this.synth.speak(utterThis)
+          this.lastPrediction = maxPrediction.className
+        }
+        
+    }
   }
 }
 </script>
