@@ -431,3 +431,147 @@ This code loops over the list of predictions and generates a `li` (list item) fo
 
 The code `{{prediction.name}}, {{prediction.score}} %` generates text like `person, 86.66 %`.
 
+# Use a custom Teachable Machine model
+
+
+## Install the Teachable Machine library
+
+```
+npm install --legacy-peer-deps @teachablemachine/image
+```
+
+Note: `--legacy-peer-deps` is only necessary if you are using an npm version >= 7 (you can check your npm version with `npm --version`). That was the reason for the problems we had during the library installation in class.
+
+## Train & download a Teachable Machine model
+
+- Go to https://teachablemachine.withgoogle.com
+- Train an image project
+- Download the model (use the tensorflow.js export option)
+
+## Update the code
+
+### Integrate the Teachable Machine Model
+
+Put the model files
+
+- `model.json`
+- `metadata.json`
+- `weights.bin``
+
+into the `public` directory of your app.
+
+### Import the Teachable Machine library
+
+In `App.vue`, replace
+
+```js
+import * as cocoSsd from '@tensorflow-models/coco-ssd'
+```
+
+with
+
+```js
+import * as tmImage from '@teachablemachine/image'
+```
+
+### Update `loadModel()`
+
+Use this code to load the Teachable Machine model:
+
+```js
+loadModel() {
+    return tmImage.load('/model.json', '/metadata.json')
+    .then(model => {
+        this.model = model
+        this.isModelReady = true
+    })
+    .catch(error => {
+        console.log('failed to load the mode', error)
+        throw(error)
+    })
+}
+```
+
+### Update `detectObjects()`
+
+This function needs an update too:
+
+```js
+detectObjects() {
+    if (!this.isModelReady) return
+
+    if (this.isVideoStreamReady) {
+        this.model.predict(this.$refs.video)
+        .then(predictions => {
+        this.handlePredictions(predictions)
+        
+        requestAnimationFrame(() => {
+            this.detectObjects()
+        })
+        })
+    } else {
+        requestAnimationFrame(() => {
+        this.detectObjects()
+        })
+    }
+}
+```
+
+Note that we have called a function `handlePredictions()` that effectively replaces `renderPredictions()` (you can simply remove `renderPredictions()` from your code and add `handlePredictions()` to the `methods section of your app):
+
+```js
+handlePredictions (predictions) {
+    this.predictions.splice(0)
+    
+    let maxPrediction
+    let maxProb = 0
+
+    predictions.forEach(prediction => {
+        this.predictions.push({
+            name: prediction.className,
+            score: (prediction.probability * 100).toFixed(1)
+        })
+
+        if (prediction.probability > maxProb) {
+            maxProb = prediction.probability
+            maxPrediction = prediction
+        }
+    })
+
+    if (! this.synth.speaking && this.lastPrediction != maxPrediction.className) {
+        const utterThis = new SpeechSynthesisUtterance(maxPrediction.className);
+        this.speak(maxPrediction.className)
+        this.lastPrediction = maxPrediction.className
+    }
+}
+```
+
+This function does 3 things:
+- It loops over the predictions from the Teachable Machine model and converts each prediction to a format that can be easily used in vue.js template code
+- It finds the most likely prediction
+- It uses speech synthesis to speak out the prediction class
+
+### Update the data section
+
+We also need two additional data elements for the speech synthesis:
+
+```js
+data () {
+    return {
+        ...
+        synth: window.speechSynthesis,
+        lastPrediction: ''
+    }
+}
+```
+
+### Helper function
+
+Finally, we have to create a helper function (in the `methods` section) that accesses the speech synthesis API of the browser:
+
+```js
+speak (prediction) {
+    const utterThis = new SpeechSynthesisUtterance(prediction);
+    this.synth.speak(utterThis)
+}
+```
