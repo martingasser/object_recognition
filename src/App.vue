@@ -1,6 +1,6 @@
 <template>
-  <div id="app">
-    <div id="center-container">
+  <div class="app">
+    <div class="center-container">
       <select class="margin-10 device-select" v-model="audioDevice">
         <option v-for="device, id in audioDevices" :key="id" :value="device.deviceId">
           {{ device.label }}
@@ -146,7 +146,7 @@ export default {
 </script>
 
 <style>
-#app {
+.app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -189,7 +189,7 @@ td:nth-child(2) {
   text-align: center;
 }
 
-#center-container {
+.center-container {
   width: 600px;
   margin: 0 auto;
 }
