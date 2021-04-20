@@ -87,6 +87,9 @@ export default {
       this.setupRecognizer(this.audioDevice)
     })
 
+
+    this.webSocket = new WebSocket('ws://localhost:8081')
+
   },
   methods: {
     async setupRecognizer (deviceId) {
@@ -109,13 +112,12 @@ export default {
       })
     },
     async createModel() {
-        const recognizer = speechCommands.create('BROWSER_FFT', '18w')
+        // const recognizer = speechCommands.create('BROWSER_FFT', 'directional4w')
         // (1) try replacing the '18w' function argument with 'directional4w'.
         // - What happens? Why?
         // - check https://github.com/tensorflow/tfjs-models/tree/master/speech-commands
 
         // (2) replace the model trained on Speech Commands with a model trained on your own data
-        /*
         const checkpointURL = `${location.protocol}//${location.host}/model.json` // model topology
         const metadataURL = `${location.protocol}//${location.host}/metadata.json` // model metadata
 
@@ -124,7 +126,6 @@ export default {
             undefined, // speech commands vocabulary feature, not useful for your models
             checkpointURL,
             metadataURL)
-        */
 
         // check that model and metadata are loaded via HTTPS requests.
         await recognizer.ensureModelLoaded()
@@ -140,6 +141,14 @@ export default {
               score: (prediction * 100).toFixed(1)
             })
         })
+
+        const message = {
+          detectionType: 'speech',
+          className: this.topPrediction.name,
+          score: this.topPrediction.score
+        }
+
+        this.webSocket.send(JSON.stringify(message))
     }
   }
 }
