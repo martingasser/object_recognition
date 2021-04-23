@@ -6,6 +6,7 @@
           {{ device.label }}
         </option>
       </select>
+      <!-- <input class="margin-10 text-input" type="text" v-model="username" placeholder="Enter username"> -->
       <table class="margin-10">
         <tr class="top-row" v-if="topPrediction != null">
           <td>{{ topPrediction.name }}</td>
@@ -35,9 +36,11 @@ export default {
     return {
       isModelReady: false,
       predictions: [],
+      lastPrediction: null,
       audioTrackConstraints: {},
       audioDevices: [],
-      audioDevice: ''
+      audioDevice: '',
+      // username: ''
     }
   },
   watch: {
@@ -88,7 +91,8 @@ export default {
     })
 
 
-    this.webSocket = new WebSocket('ws://localhost:8081')
+    // this.webSocket = new WebSocket('ws://localhost:8081')
+    this.webSocket = new WebSocket('wss://5ad55184c310.ngrok.io')
 
   },
   methods: {
@@ -142,13 +146,20 @@ export default {
             })
         })
 
-        const message = {
-          detectionType: 'speech',
-          className: this.topPrediction.name,
-          score: this.topPrediction.score
+        if (this.lastPrediction == null) {
+          this.lastPrediction = this.topPrediction
         }
+        else if (this.lastPrediction.name != this.topPrediction.name) {
+          const message = {
+            detectionType: 'speech',
+            // username: this.username,
+            className: this.topPrediction.name,
+            score: this.topPrediction.score
+          }
 
-        this.webSocket.send(JSON.stringify(message))
+          this.webSocket.send(JSON.stringify(message))
+          this.lastPrediction = this.topPrediction
+        }
     }
   }
 }
@@ -205,5 +216,9 @@ td:nth-child(2) {
 
 .device-select {
   width: 100%;
+}
+
+.text-input {
+  width: 50%;
 }
 </style>
