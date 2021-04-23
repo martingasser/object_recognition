@@ -36,7 +36,6 @@ export default {
       baseModel: 'mobilenet_v2',
       isModelReady: false,
       predictions: [],
-      // synth: window.speechSynthesis,
       lastPrediction: ''
     }
   },
@@ -167,16 +166,9 @@ export default {
           }
 
           this.webSocket.send(JSON.stringify(message))
-          //   this.speak(maxPrediction.className)
           this.lastPrediction = maxPrediction.className
         }
-
-    },
-
-    // speak (prediction) {
-    //   const utterThis = new SpeechSynthesisUtterance(prediction);
-    //   this.synth.speak(utterThis)
-    // }
+    }
   }
 }
 </script>
