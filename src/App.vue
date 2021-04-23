@@ -36,7 +36,7 @@ export default {
       baseModel: 'mobilenet_v2',
       isModelReady: false,
       predictions: [],
-      synth: window.speechSynthesis,
+      // synth: window.speechSynthesis,
       lastPrediction: ''
     }
   },
@@ -58,7 +58,9 @@ export default {
       .then(() => {
         this.detectObjects()
       })
-    })    
+    })
+
+    this.webSocket = new WebSocket('ws://localhost:8081')
   },
   methods: {
     listVideoDevices () {
@@ -157,16 +159,24 @@ export default {
             }
         })
 
-        if (! this.synth.speaking && this.lastPrediction != maxPrediction.className) {
-          this.speak(maxPrediction.className)
+        if (this.lastPrediction != maxPrediction.className) {
+          const message = {
+            type: 'image',
+            className: maxPrediction.className,
+            confidence: maxPrediction.probability
+          }
+
+          this.webSocket.send(JSON.stringify(message))
+          //   this.speak(maxPrediction.className)
           this.lastPrediction = maxPrediction.className
         }
+
     },
 
-    speak (prediction) {
-      const utterThis = new SpeechSynthesisUtterance(prediction);
-      this.synth.speak(utterThis)
-    }
+    // speak (prediction) {
+    //   const utterThis = new SpeechSynthesisUtterance(prediction);
+    //   this.synth.speak(utterThis)
+    // }
   }
 }
 </script>
